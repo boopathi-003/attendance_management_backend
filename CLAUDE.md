@@ -26,7 +26,7 @@ Use the Maven wrapper — `mvn` may not be on PATH: `.\mvnw.cmd` (PowerShell) or
 
 **JDK 21 is required** (`pom.xml:30`). If `java -version` reports below 21, point `JAVA_HOME` at a JDK 21 install or compilation fails with "release version 21 not supported". `mvnw` honours `JAVA_HOME`.
 
-**Runtime prerequisite:** MySQL reachable at `localhost:3306` with the credentials in `src/main/resources/application.properties`. The schema is created automatically (`createDatabaseIfNotExist=true` plus `spring.jpa.hibernate.ddl-auto=update`) — there are no migrations, no `schema.sql`/`data.sql`, and no profile-specific property files, so the entities in `table/` *are* the schema definition.
+**Runtime prerequisite:** MySQL reachable at `localhost:3306`, plus two environment variables — `DB_PASSWORD` and `JWT_SECRET`. Neither has a fallback in `application.properties`, so the app fails at startup without them. `DB_URL`, `DB_USERNAME` and `JWT_EXPIRATION` are optional and default to local values. A gitignored `application-local.properties` (see the `.example` beside it) works as an alternative to environment variables. The schema is created automatically (`createDatabaseIfNotExist=true` plus `spring.jpa.hibernate.ddl-auto=update`) — there are no migrations, no `schema.sql`/`data.sql`, and no profile-specific property files, so the entities in `table/` *are* the schema definition.
 
 **Tests need neither Spring nor a database.** All tests are plain JUnit 5 + Mockito with `@Mock`/`@InjectMocks` — mostly `@ExtendWith(MockitoExtension.class)`, with `AttendanceServiceTest` using `MockitoAnnotations.openMocks` instead. There is no `@SpringBootTest`, `@WebMvcTest`, or `@DataJpaTest` anywhere, and no context-load test. Controller tests invoke controller methods directly; MockMvc is not used.
 
@@ -53,7 +53,7 @@ There is no foreign key or join between them. `AttendanceInfo` and `LeaveInfo` r
 
 `POST /login` → `UserAuthService.verifyLogin` checks the user exists, is active, and the bcrypt password matches, then delegates to `AuthenticationManager` → `JwtService.getToken(username, role)` mints an HS256 token carrying a `role` claim. On subsequent requests `JwtFilter` (registered before `UsernamePasswordAuthenticationFilter`) reads the `Bearer` header, loads the user through `MyUserDetailService`, and populates the `SecurityContext`. `UserAuth.getAuthorities()` returns `"ROLE_" + role.toUpperCase()`, so a stored role of `admin` satisfies `hasRole('ADMIN')`.
 
-`jwt.secret` and `jwt.expiration` come from `application.properties`; the secret is Base64-decoded for verification.
+`jwt.secret` and `jwt.expiration` resolve from the `JWT_SECRET` and `JWT_EXPIRATION` environment variables via `application.properties`; the secret is Base64-decoded for verification.
 
 ### Two authorization layers
 
@@ -144,7 +144,8 @@ Configured twice: `SecurityConfig.corsConfigurationSource` allows `http://localh
 ### Odds and ends
 
 - `spring-boot-starter-actuator` is on the classpath with no `management.*` properties, so only `/actuator/health` is exposed — and it sits behind `anyRequest().authenticated()`.
-- `spring.security.user.name`/`password` in `application.properties` are dead: a custom `UserDetailsService` bean replaces the auto-configured in-memory user.
-- `jwt.secret` is committed in `application.properties`, and `JwtService.getToken` signs with the deprecated `signWith(SignatureAlgorithm, String)` overload while verification uses a Base64-decoded `SecretKey` — the two paths disagree stylistically but interoperate.
+- `JwtService.getToken` signs with the deprecated `signWith(SignatureAlgorithm, String)` overload while verification uses a Base64-decoded `SecretKey` — the two paths disagree stylistically but interoperate.
+- `JwtService` still declares `@Value("${jwt.secret:defaultSecretKey}")`. That fallback is now unreachable (the property is always present, resolving from `JWT_SECRET`), but it is misleading and worth deleting.
+- Secrets used to be committed here and remain in git history at `df886c5`. The original JWT secret must be treated as compromised — never reuse that value.
 - Entities in `table/` carry `@Component` alongside `@Entity`. That makes Spring register a bean per entity class; harmless here, but don't copy the pattern.
 - `UserInfo`, `UserDto` and `ApiResponse` each contain an empty stub constructor that assigns nothing (e.g. `UserInfo(long, String, String, String, boolean)`). They exist only to satisfy old test code — never call them.
