@@ -47,18 +47,45 @@ Tests need neither a database nor a Spring context; they are plain JUnit 5 with 
 
 ## Configuration
 
-Settings live in `src/main/resources/application.properties`. There are no profile-specific files.
+Settings live in `src/main/resources/application.properties`. Secrets are **not** committed — they are read from
+the environment.
 
-| Property | Purpose |
-| --- | --- |
-| `spring.datasource.url` / `.username` / `.password` | MySQL connection |
-| `spring.jpa.hibernate.ddl-auto` | `update` — Hibernate reconciles the schema on startup |
-| `jwt.secret` | Base64 HS256 signing key |
-| `jwt.expiration` | Token lifetime in milliseconds (currently 10 hours) |
+| Variable | Required | Default | Purpose |
+| --- | --- | --- | --- |
+| `DB_PASSWORD` | **yes** | — | MySQL password |
+| `JWT_SECRET` | **yes** | — | Base64-encoded HS256 signing key |
+| `DB_URL` | no | `jdbc:mysql://localhost:3306/attendance_management?createDatabaseIfNotExist=true` | JDBC URL |
+| `DB_USERNAME` | no | `root` | MySQL user |
+| `JWT_EXPIRATION` | no | `36000000` (10 hours) | Token lifetime in ms |
 
-> **Note:** the datasource password and JWT secret are currently committed to this repository, which is why it is
-> private. They should be moved to environment variables before the repo is made public — and rotated, since they
-> are already in the git history.
+The two required variables have no fallback value, so the application fails fast at startup if they are missing
+rather than quietly using a known key.
+
+**Generate a signing key:**
+
+```bash
+openssl rand -base64 48
+```
+
+**Set them for a local run:**
+
+```powershell
+$env:DB_PASSWORD = "your-mysql-password"
+$env:JWT_SECRET  = "your-generated-key"
+.\mvnw.cmd spring-boot:run
+```
+
+```bash
+export DB_PASSWORD="your-mysql-password"
+export JWT_SECRET="your-generated-key"
+./mvnw spring-boot:run
+```
+
+Prefer a file? Copy `src/main/resources/application-local.properties.example` to
+`application-local.properties` (gitignored), fill it in, and run with
+`-Dspring-boot.run.profiles=local`.
+
+Tests need none of this — they are plain Mockito unit tests with no Spring context.
 
 ## Creating the first account
 
