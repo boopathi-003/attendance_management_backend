@@ -1,0 +1,14 @@
+# Copy this file to application-local.properties (which is gitignored) and
+# fill in your own values, then run with the "local" profile:
+#
+#   .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
+#
+# Alternatively, skip this file and set DB_PASSWORD / JWT_SECRET as
+# environment variables instead.
+
+spring.datasource.username=root
+spring.datasource.password=CHANGE_ME
+
+# Base64-encoded HS256 key. Generate one with:
+#   openssl rand -base64 48
+jwt.secret=CHANGE_ME
