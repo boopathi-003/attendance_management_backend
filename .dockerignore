@@ -1,0 +1,8 @@
+target/
+.git/
+.idea/
+*.iml
+
+# Local secrets. These must never be copied into an image layer — supply
+# DB_PASSWORD and JWT_SECRET as environment variables at run time instead.
+src/main/resources/application-local.properties

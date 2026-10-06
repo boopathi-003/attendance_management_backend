@@ -145,5 +145,7 @@ exceptionhandler/  @RestControllerAdvice + custom exceptions
 ## Documentation
 
 - [`CLAUDE.md`](CLAUDE.md) — architecture notes, conventions, and the known rough edges
+- [`CONCEPTS.md`](CONCEPTS.md) — every Spring Boot and Java concept this code uses, where it lives, and what it
+  actually does here
 - [`LEARNING-ROADMAP.md`](LEARNING-ROADMAP.md) — a 15-step guide to Spring Boot built around this codebase, one
   concept per step with the files and exercises for each
