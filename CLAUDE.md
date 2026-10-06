@@ -30,7 +30,10 @@ Use the Maven wrapper — `mvn` may not be on PATH: `.\mvnw.cmd` (PowerShell) or
 
 **Tests need neither Spring nor a database.** All tests are plain JUnit 5 + Mockito with `@Mock`/`@InjectMocks` — mostly `@ExtendWith(MockitoExtension.class)`, with `AttendanceServiceTest` using `MockitoAnnotations.openMocks` instead. There is no `@SpringBootTest`, `@WebMvcTest`, or `@DataJpaTest` anywhere, and no context-load test. Controller tests invoke controller methods directly; MockMvc is not used.
 
-The `Dockerfile` in the root is empty — container builds are not set up.
+The root `Dockerfile` is a multi-stage build (Maven/Temurin 21 → `eclipse-temurin:21-jre`) producing `/app/app.jar`.
+`.dockerignore` excludes `src/main/resources/application-local.properties`, so no secrets reach an image layer —
+`DB_PASSWORD` and `JWT_SECRET` must be passed at run time. `DB_URL` defaults to `localhost`, which inside a
+container is the container itself; point it at `host.docker.internal` when MySQL runs on the host.
 
 ## Architecture
 
